@@ -20,7 +20,7 @@ class Dosen extends SivitasAkademik {
     private $nidn;
      
      public function __construct($nama, $nidn) {
-        parent::_construct($nama);
+        parent::__construct($nama);
         $this->nidn = $nidn;
      }
 
@@ -34,7 +34,7 @@ class Mahasiswa extends SivitasAkademik {
     private $nim;
 
     public function __construct($nama, $nim) {
-        parent::_construct($nama);
+        parent::__construct($nama);
         $this->nim = $nim;
     }
 
