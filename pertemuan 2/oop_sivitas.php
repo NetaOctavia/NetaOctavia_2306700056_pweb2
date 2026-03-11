@@ -44,7 +44,7 @@ class Mahasiswa extends SivitasAkademik {
 }
 
 //Instansiasi Object
-$dosen1 = new Dosen("Ajib Abdul Kholiq, S.Kom.");
+$dosen1 = new Dosen("Ajib Abdul Kholiq, S.Kom.", "12345678");
 $mahasiswa1 = new Mahasiswa("Neta Octavia", "2306700056");
 
 //Menampilkan data
