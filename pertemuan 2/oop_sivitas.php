@@ -5,7 +5,7 @@ class SivitasAkademik {
     protected $nama;
 
     //Constructor
-    public function _construct($nama) {
+    public function __construct($nama) {
         $this->nama = $nama;
     }
 
@@ -19,9 +19,9 @@ class SivitasAkademik {
 class Dosen extends SivitasAkademik {
     private $nidn;
      
-     public function _construct($nama, $nidn) {
+     public function __construct($nama, $nidn) {
         parent::_construct($nama);
-        $this->midn = $nidn;
+        $this->nidn = $nidn;
      }
 
      public function getNidn() {
@@ -33,7 +33,7 @@ class Dosen extends SivitasAkademik {
 class Mahasiswa extends SivitasAkademik {
     private $nim;
 
-    public function _construct($nama, $nim) {
+    public function __construct($nama, $nim) {
         parent::_construct($nama);
         $this->nim = $nim;
     }
