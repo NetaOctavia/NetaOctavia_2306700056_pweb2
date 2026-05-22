@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Premium Movie & Anime Hub - UTS Pemrograman Web 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-amber-500 selection:text-slate-900">
+
+    <div class="container mx-auto px-4 py-10 max-w-7xl">
+        
+        <header class="mb-12 text-center relative">
+            <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-32 bg-amber-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+            <h1 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 mb-3 tracking-wider uppercase">
+                🎬 MOVIE & ANIME HUB
+            </h1>
+            <p class="text-slate-400 max-w-md mx-auto text-sm md:text-base">
+                Eksplorasi Data Film dan Anime Populer secara Live via RESTful Public API
+            </p>
+        </header>
+
+        <div class="mb-12 flex justify-center">
+            <div class="w-full max-w-xl relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Cari film atau anime (misal: Naruto, JJK, Drama)..." 
+                        class="w-full px-6 py-4 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/70 placeholder-slate-500 transition shadow-2xl"
+                    >
+                    <span class="absolute right-5 top-4.5 text-xl text-slate-500 group-hover:text-amber-400 transition duration-300">🔍</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusMessage" class="hidden text-center my-12">
+            </div>
+
+        <main id="movieContainer" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-8">
+            </main>
+    </div>
+
+    <div id="movieModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 opacity-0">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative transform scale-95 transition-all duration-300 max-h-[90vh] overflow-y-auto">
+            
+            <button id="closeModalBtn" class="absolute top-4 right-4 z-10 bg-slate-950/60 hover:bg-amber-500 hover:text-slate-900 text-white p-2.5 rounded-full backdrop-blur-md transition shadow-md font-bold text-sm">
+                ✕
+            </button>
+
+            <div id="modalContent" class="flex flex-col md:flex-row">
+                </div>
+        </div>
+    </div>
+
+
+    <script>
+        // State Management
+        let allMovies = [];
+
+        // DOM Terintegrasi
+        const movieContainer = document.getElementById('movieContainer');
+        const searchInput = document.getElementById('searchInput');
+        const statusMessage = document.getElementById('statusMessage');
+        const movieModal = document.getElementById('movieModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        // --- DATA ANIME TAMBAHAN (DIINJEKSI KE DALAM ARRAY API + LINK TRAILER YOUTUBE) ---
+        const customAnimeList = [
+            {
+                name: "Naruto Shippuden",
+                rating: "8.7",
+                image_url: "https://cdn.myanimelist.net/images/anime/1565/111305.jpg", 
+                genre: ["Animation", "Action", "Adventure"],
+                year: "2007",
+                runtime: "24 min",
+                desc: "Naruto Uzumaki, seorang ninja remaja yang hiperaktif dan keras kepala, berjuang keras untuk mendapatkan gelar Hokage, pemimpin ninja di desanya, sambil menghadapi organisasi kriminal misterius bernama Akatsuki.",
+                directors: ["Hayato Date"],
+                actors: ["Junko Takeuchi", "Noriaki Sugiyama", "Chie Nakamura"],
+                trailer: "https://www.youtube.com/watch?v=1S_pEa6S1pE" // Link Trailer Naruto
+            },
+            {
+                name: "Jujutsu Kaisen",
+                rating: "8.6",
+                image_url: "https://cdn.myanimelist.net/images/anime/1171/109222.jpg",
+                genre: ["Animation", "Action", "Fantasy"],
+                year: "2020",
+                runtime: "24 min",
+                desc: "Yuji Itadori, seorang siswa SMA dengan kekuatan fisik luar biasa, menelan jari terkutuk demi menyelamatkan temannya. Ia akhirnya harus bergabung ke SMA Jujutsu Tokyo untuk belajar mengendalikan kutukan legendaris Ryomen Sukuna di dalam tubuhnya.",
+                directors: ["Sunghoo Park", "Shota Goshozono"],
+                actors: ["Junya Enoki", "Yuma Uchida", "Asami Seto"],
+                trailer: "https://www.youtube.com/watch?v=PkB_Z3LdG6A" // Link Trailer JJK
+            },
+            {
+                name: "Spy x Family",
+                rating: "8.4",
+                image_url: "https://cdn.myanimelist.net/images/anime/1441/122795.jpg",
+                genre: ["Animation", "Action", "Comedy"],
+                year: "2022",
+                runtime: "24 min",
+                desc: "Seorang mata-mata elit dengan nama samaran Twilight membangun sebuah keluarga buatan demi menjalankan misi perdamaian rahasia. Tanpa ia sadari, istri sewaannya adalah seorang pembunuh bayaran profesional, dan anak angkatnya adalah seorang esper pembaca pikiran.",
+                directors: ["Kazuhiro Furuhashi"],
+                actors: ["Takuya Eguchi", "Atsumi Tanezaki", "Saori Hayami"],
+                trailer: "https://www.youtube.com/watch?v=ofXigq9aIpo" // Link Trailer Spy x Family
+            }
+        ];
+
+        // 1. Ambil Data API Publik (Async Fetch & Error Handling)
+        async function fetchMovies() {
+            const apiUrl = 'https://raw.githubusercontent.com/theapache64/top250/master/top250_min.json';
+            
+            showLoading();
+
+            try {
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Koneksi API bermasalah. Status HTTP: ${response.status}`);
+                }
+
+                const apiData = await response.json();
+                
+                allMovies = [...customAnimeList, ...apiData];
+                
+                hideStatus();
+                renderMovies(allMovies);
+
+            } catch (error) {
+                console.error("API Error Log:", error);
+                showError(`Gagal mengambil data! (${error.message}). Pastikan browser terhubung ke internet.`);
+            }
+        }
+
+        // 2. Loop & Render UI Grid Cards
+        function renderMovies(movies) {
+            movieContainer.innerHTML = '';
+
+            if (movies.length === 0) {
+                movieContainer.innerHTML = `
+                    <div class="col-span-full text-center py-20 text-slate-500 font-medium">
+                        🎬 Judul, tokoh, atau kategori yang kamu cari tidak ditemukan.
+                    </div>
+                `;
+                return;
+            }
+
+            const topMovies = movies.slice(0, 33);
+
+            topMovies.forEach((movie, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900/60 rounded-2xl overflow-hidden border border-slate-800/80 hover:border-amber-500/60 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] hover:scale-[1.04] transition-all duration-300 flex flex-col justify-between group cursor-pointer';
+                
+                const isAnime = index < customAnimeList.length;
+
+                card.innerHTML = `
+                    <div class="overflow-hidden relative aspect-[2/3] bg-slate-950">
+                        <img 
+                            src="${movie.image_url}" 
+                            alt="${movie.name}" 
+                            class="w-full h-full object-cover group-hover:scale-105 group-hover:opacity-90 transition duration-500"
+                            loading="lazy"
+                            onerror="this.src='https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=500&q=80'"
+                        >
+                        <div class="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-amber-400 text-xs font-black px-2.5 py-1 rounded-xl border border-slate-800 shadow flex items-center gap-1">
+                            ⭐ <span>${parseFloat(movie.rating).toFixed(1)}</span>
+                        </div>
+                        
+                        <div class="absolute bottom-3 left-3 text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-md uppercase ${isAnime ? 'bg-sky-500 text-slate-950' : 'bg-amber-500 text-slate-950'}">
+                            ${isAnime ? '🔥 ANIME' : `RANK #${index + 1 - customAnimeList.length}`}
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 flex-grow flex-col flex justify-between">
+                        <div>
+                            <h3 class="font-bold text-sm md:text-base text-slate-100 line-clamp-1 group-hover:text-amber-400 transition duration-300">
+                                ${movie.name}
+                            </h3>
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                ${movie.genre.slice(0, 2).map(g => `<span class="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">${g}</span>`).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="pt-3 mt-3 border-t border-slate-800/80 flex justify-between items-center text-[11px] text-slate-500 font-medium">
+                            <span>📅 ${movie.year}</span>
+                            <span>⏱️ ${movie.runtime}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    const label = isAnime ? 'POPULAR ANIME' : `RANK #${index + 1 - customAnimeList.length}`;
+                    openMovieDetail(movie, label);
+                });
+
+                movieContainer.appendChild(card);
+            });
+        }
+
+        // 3. Logika Jendela Detail Modal + Tombol Nonton Trailer
+        function openMovieDetail(movie, labelInfo) {
+            const youtubeSearchUrl = movie.trailer ? movie.trailer : `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.name + ' official trailer')}`;
+
+            modalContent.innerHTML = `
+                <div class="w-full md:w-2/5 bg-slate-950 aspect-[2/3] md:aspect-auto">
+                    <img 
+                        src="${movie.image_url}" 
+                        alt="${movie.name}" 
+                        class="w-full h-full object-cover"
+                        onerror="this.src='https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=500&q=80'"
+                    >
+                </div>
+                
+                <div class="w-full md:w-3/5 p-6 md:p-8 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="bg-amber-500 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-md">${labelInfo}</span>
+                            <span class="text-xs text-slate-400">Database Hiburan</span>
+                        </div>
+                        
+                        <h2 class="text-2xl font-black text-white mb-2 tracking-wide">${movie.name}</h2>
+                        
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400 mb-4 font-medium">
+                            <span class="text-amber-400 font-bold flex items-center gap-1">⭐ ${movie.rating} / 10</span>
+                            <span>📅 Tahun Rilis: <strong class="text-slate-200">${movie.year}</strong></span>
+                            <span>⏱️ Durasi: <strong class="text-slate-200">${movie.runtime}</strong></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4 class="text-xs uppercase tracking-wider font-bold text-slate-500 mb-1">Sinopsis</h4>
+                            <p class="text-xs md:text-sm text-slate-300 leading-relaxed line-clamp-4 md:line-clamp-none">
+                                ${movie.desc ? movie.desc : 'Film legendaris berkualitas mahakarya pilihan kritikus global yang terdaftar ke dalam jajaran database 250 sinema terbaik sepanjang masa.'}
+                            </p>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="flex flex-wrap gap-1.5">
+                                ${movie.genre.map(g => `<span class="text-[10px] bg-slate-800 border border-slate-700/50 text-amber-400 font-medium px-2 py-0.5 rounded-lg">${g}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <a 
+                            href="${youtubeSearchUrl}" 
+                            target="_blank" 
+                            class="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-red-950/40 hover:scale-[1.02] transition active:scale-95 text-sm"
+                        >
+                            <span>▶️</span> Tonton Official Trailer
+                        </a>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800/80 text-[11px] space-y-1 text-slate-400 font-medium">
+                        <div>🎬 Sutradara: <strong class="text-slate-200">${movie.directors ? movie.directors.join(', ') : 'Sutradara Pilihan'}</strong></div>
+                        <div class="line-clamp-1">🎭 Pemeran: <strong class="text-slate-200">${movie.actors ? movie.actors.join(', ') : 'Aktor Internasional'}</strong></div>
+                    </div>
+                </div>
+            `;
+
+            movieModal.classList.remove('hidden');
+            setTimeout(() => {
+                movieModal.classList.remove('opacity-0');
+                movieModal.querySelector('.transform').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            movieModal.classList.add('opacity-0');
+            movieModal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => {
+                movieModal.classList.add('hidden');
+            }, 300);
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        movieModal.addEventListener('click', (e) => {
+            if (e.target === movieModal) closeModal();
+        });
+
+        // 4. Fitur Real-Time Live Search Data
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase();
+            const filteredMovies = allMovies.filter(movie => 
+                movie.name.toLowerCase().includes(keyword) || 
+                movie.genre.some(g => g.toLowerCase().includes(keyword)) ||
+                (movie.desc && movie.desc.toLowerCase().includes(keyword))
+            );
+            renderMovies(filteredMovies);
+        });
+
+        function showLoading() {
+            statusMessage.className = "block text-center my-16 text-amber-500 font-semibold animate-pulse tracking-wide";
+            statusMessage.innerHTML = "⏳ Mengamankan koneksi API & memuat database hiburan populer...";
+            movieContainer.innerHTML = '';
+        }
+
+        function showError(message) {
+            statusMessage.className = "block text-center my-12 p-5 bg-red-950/40 border border-red-500/40 text-red-200 rounded-2xl max-w-lg mx-auto font-medium shadow-xl";
+            statusMessage.innerHTML = `⚠️ ${message}`;
+            movieContainer.innerHTML = '';
+        }
+
+        function hideStatus() {
+            statusMessage.className = "hidden";
+        }
+
+        window.addEventListener('DOMContentLoaded', fetchMovies);
+    </script>
+</body>
+</html>
